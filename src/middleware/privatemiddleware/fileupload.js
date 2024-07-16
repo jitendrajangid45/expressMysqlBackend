@@ -16,6 +16,32 @@ const storage = multer.diskStorage({
     }
   });
   
-  const upload = multer({ storage: storage });
+  const upload = (fieldName) =>{
+    return multer({ 
+      storage: storage,
+      fileFilter: (req, file, cb) => {
+        if(!['image/png',
+        'image/jpeg',
+        'image/jpg'].includes(file.mimetype)){
+          return cb(new Error('file is not allowed'));
+        }
+        cb(null, true);
+      } }).single(fieldName);
+  }
 
-  module.exports = upload;
+  const profileUpload = (req,res,next) => {
+    const uploader = upload('profile');
+    uploader(req, res, (err) => {
+      if (err instanceof multer.MulterError) {
+        return res.status(400).json({ status: 400,message: err.message });
+      } else if (err) {
+        if (err.message === 'file is not allowed') {
+          return res.status(400).json({ status: 400,message: 'Invalid file type only png, jpg and jpeg file are allowed.' });
+        }
+        return res.status(400).json({ status: 400,message: err.message });
+      }
+      return next();
+    });
+  }
+
+  module.exports = profileUpload;

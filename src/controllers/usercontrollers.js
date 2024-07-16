@@ -1,6 +1,4 @@
 const {User,Profile} = require('../models');
-const { Sequelize } = require('sequelize');
-const bcrypt = require('bcrypt');
 const {userRegisterSchema} = require('../validations/uservalidation');
 const logger = require('../middleware/publicmiddleware/winston');
 const profile = require('../models/profile');
@@ -29,15 +27,7 @@ const registerUser = async(req,res) => {
       })
       
     }catch(err){
-      // if (err instanceof Sequelize.ValidationError) {
-      //   const errors = err.errors.map(error => ({
-      //     field: error.path,
-      //     message: error.message
-      //   }));
-      //   res.status(400).json({ errors });
-      // }
-      console.error("errors==>>", err.message);
-      // console.error("errors==>>", err.message);
+      logger.error("errors==>>", err.message);
       res.status(409).json({
         status: 409,
         message: err.message
@@ -74,10 +64,12 @@ const getAllUsers = async (req,res) => {
       order:[['fullname', 'ASC']],
       attributes: ['username','fullname','email'],
     });
+    logger.info('users->', users);
     if(users){
-      res.status(302).json({
-        status:302,
+      res.status(200).json({
+        status:200,
         message: "Users found",
+        logined : req.user,
         data: users
       })
     }
@@ -90,7 +82,7 @@ const getAllUsers = async (req,res) => {
  * @author: Jitendra jangid
  * @function: Update login user details
  */
-const putUpdate = async (req,res) => {
+const detailsUpdate = async (req,res) => {
   try{
     const data  = await User.findOne({
       where:{
@@ -98,10 +90,13 @@ const putUpdate = async (req,res) => {
       }
     })
 
-    data['username'] = req.query.username;
-    data['email'] = req.query.email;
+    data['username'] = req.body.username;
+    data['email'] = req.body.email;
+    data['password'] = req.body.password;
 
     await data.save();    
+
+    res.status(200).json({status:200, message: 'Data updated' })
 
   }catch(err){
     console.error("error", err);
@@ -113,18 +108,39 @@ const putUpdate = async (req,res) => {
  * @author: Jitendra jangid
  * @function: Create new profile of login user
  */
-const profileUpload = async (req,res) => {
+const profileCreate = async (req,res) => {
   try{
     const profile = await Profile.create({
       userId : Number(req.user.id),
-      profile : req.file.filename
+      profile : req.file.filename,
+      summary : req.body.summary
     })
     res.status(200).json({status:200,message:"Profile created successfully",data:profile})
   }catch(err){
-    logger.error("error==>",err);
+    logger.error(err);
     res.status(400).json({ status:400,error: err.message });
   }
 }
 
+/**
+ * @author: Jitendra jangid
+ * @function: Delete account
+ */
+const deleteAccount = async (req,res) => {
+  try{
+    logger.info("check",req.user);
+    const user = await User.findOne({
+      where:{
+        id:req.user.id
+      }
+    })
+    await user.destroy();
+    res.status(200).json({status:200,message:'Account deleted'});
+  }catch(err){
+    logger.error(err)
+    res.status(400).json({status:400,error: err.message});
+  }
+}
 
-module.exports = { loginUser, registerUser, getAllUsers, putUpdate, profileUpload };
+
+module.exports = { loginUser, registerUser, getAllUsers, detailsUpdate, profileCreate, deleteAccount };

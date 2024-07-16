@@ -92,8 +92,10 @@ const userSchema = require('../validations/uservalidation'); // Import Joi schem
 module.exports = (sequelize, DataTypes) => {
   class User extends Model {
     static associate(models) {
-      // Define associations if any
-    }
+      User.hasOne(models.Profile, {
+        foreignKey: 'userId',
+        onDelete: 'CASCADE'
+      });    }
   }
 
   User.init({

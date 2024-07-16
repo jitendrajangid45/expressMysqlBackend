@@ -20,10 +20,8 @@ const createToken = async(req,res,next) => {
             message: 'User not found'
           });
         }
-        // Compare the password
         const passwordMatch = await bcrypt.compare(password, user.password);
         
-        // If passwords do not match
         if (!passwordMatch) {
           return res.status(401).json({
             status: 401,
@@ -54,7 +52,7 @@ const createToken = async(req,res,next) => {
 const verifyToken = async(req,res,next) => {
     let token = req.headers['authorization'];  
     if(!token){
-        res.status(200).send({successs:false,msg:'a token is require to authentication'});
+        res.status(401).json({status:401,message:'Unauthorized please provide token'});
     }
     try{
         token = token.split(' ')[1]
@@ -62,7 +60,7 @@ const verifyToken = async(req,res,next) => {
         req.user = decode;
         return next();
     } catch(err){
-        res.status(400).send('invalid token');
+        res.status(498).json({status:498,message:'Invalid token'});
     }
 }
 
